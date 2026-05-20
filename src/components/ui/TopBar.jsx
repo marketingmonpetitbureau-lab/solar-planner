@@ -1,8 +1,10 @@
 import useSolarStore from '../../store/useSolarStore'
+import useAuthStore from '../../store/useAuthStore'
 import AddressSearch from './AddressSearch'
 
-export default function TopBar() {
-  const { activeStep, setActiveStep, viewMode, setViewMode, showShadows, showShadowPanel, setShowShadowPanel } = useSolarStore()
+export default function TopBar({ onShowAuth, onShowProjects }) {
+  const { activeStep, setActiveStep, showShadows, showShadowPanel, setShowShadowPanel, isSaving, saveProject, projectName } = useSolarStore()
+  const { user, signOut } = useAuthStore()
 
   const steps = [
     { num: 1, label: 'Bâtiment' },
@@ -40,21 +42,53 @@ export default function TopBar() {
 
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <TopBtn icon="🖼" label="Images" />
-          <TopBtn icon="💬" label="Notes" />
-          <TopBtn icon="📎" label="Fichiers" />
-          <TopBtn icon="✅" label="Tâches" />
+          {user && (
+            <TopBtn icon="📂" label="Projets" onClick={onShowProjects} />
+          )}
 
           <div style={{ width: 1, height: 24, background: '#e5e7eb' }} />
 
-          <button style={{
-            padding: '5px 14px', borderRadius: 6,
-            background: '#1d4ed8', color: 'white', fontSize: 13, fontWeight: 500,
-            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <span>💾</span> Enregistrer
-            <span style={{ fontSize: 11, opacity: 0.65, marginLeft: 2 }}>ctrl+s</span>
-          </button>
+          {user ? (
+            <>
+              <button
+                onClick={() => saveProject(user.id)}
+                disabled={isSaving}
+                style={{
+                  padding: '5px 14px', borderRadius: 6,
+                  background: isSaving ? '#93c5fd' : '#1d4ed8', color: 'white', fontSize: 13, fontWeight: 500,
+                  border: 'none', cursor: isSaving ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <span>💾</span> {isSaving ? 'Sauvegarde…' : 'Enregistrer'}
+              </button>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 10px', borderRadius: 6, border: '1px solid #e5e7eb',
+                background: 'white', fontSize: 13, color: '#374151',
+              }}>
+                <span>👤</span>
+                <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.email?.split('@')[0]}
+                </span>
+                <button
+                  onClick={signOut}
+                  style={{ background: 'none', border: 'none', fontSize: 12, color: '#9ca3af', cursor: 'pointer', padding: 0 }}
+                  title="Déconnexion"
+                >×</button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={onShowAuth}
+              style={{
+                padding: '5px 14px', borderRadius: 6,
+                background: 'white', color: '#1d4ed8', fontSize: 13, fontWeight: 500,
+                border: '1px solid #1d4ed8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              🔐 Se connecter
+            </button>
+          )}
         </div>
       </div>
 

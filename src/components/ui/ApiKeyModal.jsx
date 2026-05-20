@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useSolarStore from '../../store/useSolarStore'
+import useAuthStore from '../../store/useAuthStore'
 import { fetchBuildingInsights, fetchDataLayers, downloadGeoTiff, parseGeoTiff, parseSolarSegments } from '../../services/googleSolar'
+import { saveApiKeyToProfile } from '../../lib/database'
 
 export default function ApiKeyModal({ onClose }) {
   const [apiKey, setApiKey] = useState('')
@@ -10,8 +12,17 @@ export default function ApiKeyModal({ onClose }) {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('')
   const [error, setError] = useState('')
+  const [saveKeyToAccount, setSaveKeyToAccount] = useState(true)
 
   const { setSolarData, setSegmentsFromSolar } = useSolarStore()
+  const { user, profile, refreshProfile } = useAuthStore()
+
+  // Pré-remplir avec la clé sauvegardée si disponible
+  useEffect(() => {
+    if (profile?.google_solar_api_key) {
+      setApiKey(profile.google_solar_api_key)
+    }
+  }, [profile])
 
   async function handleLoad() {
     if (!apiKey) { setError('Clé API requise'); return }
@@ -56,6 +67,12 @@ export default function ApiKeyModal({ onClose }) {
         lat: parseFloat(lat),
         lng: parseFloat(lng),
       })
+
+      // Sauvegarder la clé dans le profil Supabase si connecté
+      if (user && saveKeyToAccount) {
+        await saveApiKeyToProfile(user.id, apiKey)
+        await refreshProfile()
+      }
 
       setStep('✅ Données chargées !')
       setTimeout(onClose, 1000)
@@ -145,6 +162,17 @@ export default function ApiKeyModal({ onClose }) {
               {loading ? 'Chargement…' : '🚀 Charger le bâtiment réel'}
             </button>
           </div>
+
+          {user && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={saveKeyToAccount}
+                onChange={e => setSaveKeyToAccount(e.target.checked)}
+              />
+              Mémoriser la clé dans mon compte
+            </label>
+          )}
 
           <p style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center' }}>
             Sans clé API → mode démo avec maison générique ✓

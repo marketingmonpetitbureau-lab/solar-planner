@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { createProject, updateProject, storeToProjectData } from '../lib/database'
 
 function dayOfYearToDate(day) {
   const d = new Date(2024, 0, day)
@@ -143,6 +144,11 @@ const useSolarStore = create((set, get) => ({
   ],
   chains: [],
 
+  // Supabase project persistence
+  currentProjectId: null,
+  projectName: 'Projet sans titre',
+  isSaving: false,
+
   // Load real roof segments from Google Solar API response
   setSegmentsFromSolar: (solarSegs) => {
     const segments = solarSegs.map(seg => {
@@ -226,6 +232,25 @@ const useSolarStore = create((set, get) => ({
       hasSolarData: true,
       solarApiData: data,
     })
+  },
+
+  setProjectName: (name) => set({ projectName: name }),
+
+  // Sauvegarde le projet courant dans Supabase
+  saveProject: async (userId, name) => {
+    const state = get()
+    set({ isSaving: true })
+    try {
+      const data = storeToProjectData(state, name || state.projectName)
+      if (state.currentProjectId) {
+        await updateProject(state.currentProjectId, data)
+      } else {
+        const project = await createProject(userId, data)
+        if (project) set({ currentProjectId: project.id, projectName: project.name })
+      }
+    } finally {
+      set({ isSaving: false })
+    }
   },
 
   getTotals: () => {

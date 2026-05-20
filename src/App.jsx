@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
 import TopBar from './components/ui/TopBar'
 import RightPanel from './components/ui/RightPanel'
@@ -8,15 +8,28 @@ import SatelliteView2D from './components/2d/SatelliteView2D'
 import ShadowPanel from './components/ui/ShadowPanel'
 import SunArcOverlay from './components/ui/SunArcOverlay'
 import ReportPage from './components/report/ReportPage'
+import AuthModal from './components/auth/AuthModal'
+import ProjectsModal from './components/ui/ProjectsModal'
 import useSolarStore from './store/useSolarStore'
+import useAuthStore from './store/useAuthStore'
 
 export default function App() {
   const [showReport, setShowReport] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
+  const [showProjects, setShowProjects] = useState(false)
+
   const { showShadowPanel, viewMode } = useSolarStore()
+  const { init } = useAuthStore()
+
+  // Initialise la session Supabase au démarrage
+  useEffect(() => { init() }, [])
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f1f5f9' }}>
-      <TopBar />
+      <TopBar
+        onShowAuth={() => setShowAuth(true)}
+        onShowProjects={() => setShowProjects(true)}
+      />
       <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
         {/* Left sidebar */}
         <LeftSidebar onExport={() => setShowReport(true)} />
@@ -46,6 +59,8 @@ export default function App() {
       </div>
 
       {showReport && <ReportPage onClose={() => setShowReport(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showProjects && <ProjectsModal onClose={() => setShowProjects(false)} />}
     </div>
   )
 }
@@ -98,11 +113,8 @@ function LeftSidebar({ onExport }) {
         flexDirection: 'column',
       }} title="Réinitialiser le Nord">
         <svg viewBox="0 0 32 32" width={32} height={32}>
-          {/* North red */}
           <polygon points="16,4 18,16 16,14 14,16" fill="#ef4444" />
-          {/* South gray */}
           <polygon points="16,28 18,16 16,18 14,16" fill="#9ca3af" />
-          {/* Center dot */}
           <circle cx="16" cy="16" r="2" fill="#374151" />
         </svg>
         <span style={{ fontSize: 8, color: '#6b7280', marginTop: -2 }}>N</span>
